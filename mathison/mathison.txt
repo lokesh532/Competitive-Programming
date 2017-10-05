@@ -1,0 +1,306 @@
+import java.io.* ;
+import java.util.* ;
+public class Codeshefcode{
+	public static void main(String[] args) throws IOException{
+		Solver Machine = new Solver() ;
+		Machine.Solve() ;	
+		Machine.Finish();
+	}	
+}
+class Mod{
+	static long mod=1000000007 ;
+	static long d(long a,long b){ return (a*ModInverse(b))%mod ; }
+	static long m(long a , long b){ return (a*b)%mod ; }
+	static private long ModInverse(long a ){ return pow(a,mod-2) ; }
+	static long pow(long a,long b){
+		long val=a ; long ans=1 ;
+		while(b!=0){
+			if((b&1)==1) ans = m(ans,val) ; 
+			val = m(val,val) ; 
+			b>>=1 ;
+		}
+		return ans ;
+	}	
+}
+class pair implements Comparable<pair>{
+	long x ; int y ; 
+	pair(long x,int y){ this.x=x ; this.y=y ;}
+	public int compareTo(pair p){
+		return (this.x<p.x ? -1 : (this.x>p.x ? 1 : (this.y<p.y ? -1 : (this.y>p.y ? 1 : 0)))) ;
+	}
+}
+class Solver{	
+	FasterScanner ip = new FasterScanner(System.in) ;	  
+	PrintWriter op = new PrintWriter(System.out) ;
+	int n,m,k ;
+	int prc[][] ;
+	int costs[] ;	
+	myset minq[] ;
+	Random rn = new Random() ; 	
+	long time = 2500 ;	
+	void Solve() throws IOException{
+		n = ip.i() ; k = ip.i() ; m = ip.i() ;
+		prc = new int[m][n] ;
+		for(int i=0 ; i<m ; i++)
+			prc[i] = ip.ia(n) ;
+		costs = ip.ia(n) ;		
+		minq = new myset[m] ;
+		for(int i=0 ; i<m ; i++) minq[i] = new myset() ;
+		long tm = System.currentTimeMillis() ;
+		mylist sol = generateinitsol() ;
+		for(int i=0 ; i<m ; i++)
+			for(int elem : sol)
+				minq[i].add(prc[i][elem]) ;
+		int iterations=80 ;
+		while(iterations--!=0) sol = localSearch(sol) ;
+		for(int elem : sol) p((elem+1)+" ") ;
+		pln("") ;
+ 	} 	
+ 	mylist generateinitsol(){
+ 		int mint[] = new int[m] ;
+		Arrays.fill(mint,Integer.MAX_VALUE) ;
+		int used[] = new int[n] ;
+		int selected=0 ;
+		int lessthan[][] = new int[n][] ;
+		for(int i=0 ; i<n ; i++){
+			lessthan[i] = new int[m] ;
+			int ptr=0 ;
+			for(int j=0 ; j<m ; j++)
+				lessthan[i][ptr++]=j ;
+		}
+		while(selected<k){
+			long dec = Long.MAX_VALUE ;
+			int idx=-1 ;
+			for(int i=0 ; i<n ; i++){
+				if(used[i]!=0) continue ;
+				long val=costs[i] ;
+				for(int j : lessthan[i]){ 
+					if(val>=dec) break ;					
+					val+=(mint[j]-prc[j][i]) ;					
+				}
+				if(val<dec){
+					dec=val ;
+					idx=i ;
+				}
+			}
+			used[idx]=1 ;
+			selected++ ;
+			for(int i=0 ; i<m ; i++)
+				mint[i] = Integer.min(mint[i],prc[i][idx]) ;
+			for(int i=0 ; i<n ; i++){
+				int temp[] = new int[lessthan[i].length] ;
+				int ptr=0 ;
+				for(int j : lessthan[i])
+					if(prc[j][i]<mint[j])
+						temp[ptr++]=j ;
+				int temp2[] = new int[ptr] ;
+				for(int j=0 ; j<ptr ; j++) temp2[j]=temp[j] ;
+				lessthan[i]=temp2 ;
+			}
+		}
+		mylist ls =  new mylist() ;
+		for(int i=0 ; i<n ; i++) if(used[i]==1) ls.add(i) ;
+		return ls ;
+ 	}
+ 	mylist localSearch(mylist sol){
+ 		int used[] = new int[n] ;
+ 		for(int elem : sol) used[elem]=1 ;
+ 		int weak=-1 ;
+ 		int idx=0 ;
+ 		pair cand[] = new pair[k] ;
+ 		for(int i=0 ; i<m ; i++) minq[i].fillfields() ;
+ 		for(int elem : sol){
+ 			long tot=costs[elem] ;
+ 			for(int i=0 ; i<m ; i++)
+ 				tot+=minq[i].diffofmin(prc[i][elem]) ;
+ 			cand[idx++]=new pair(tot,elem) ;
+ 		}
+ 		Arrays.sort(cand) ;
+ 		int choice = rn.nextInt(Integer.min(k,6)) ;
+ 		weak = cand[k-(choice+1)].y ;
+ 		used[weak]=0 ;
+ 		for(int i=0 ; i<m ; i++)
+ 			minq[i].remove(prc[i][weak]) ;
+ 		for(int i=0 ; i<m ; i++) minq[i].fillfields2() ;
+ 		int strong=-1 ;
+ 		long mx = Long.MIN_VALUE ;
+ 		for(int elem=0 ; elem<n ; elem++){
+ 			if(used[elem]!=0)
+ 				continue ;
+ 			long tot=-costs[elem] ;
+ 			for(int i=0 ; i<m ; i++)
+ 				if(prc[i][elem]<minq[i].least())
+ 					tot+=(prc[i][elem]-minq[i].least()) ;
+ 			if(tot>mx){
+ 				mx=tot ;
+ 				strong=elem ; 
+ 			}
+ 		}
+ 		used[strong]=1 ;
+ 		for(int i=0 ; i<m ; i++)
+ 			minq[i].add(prc[i][strong]) ;
+ 		sol = new mylist() ;
+ 		for(int i=0 ; i<n ; i++) if(used[i]==1) sol.add(i) ;
+ 		return sol ;
+ 	}
+ 	mylist randomk(int n,int k){
+ 		int arr[] = new int[n] ;
+ 		for(int i=0 ; i<n ; i++) arr[i] = i ;
+ 		mylist ls = new mylist() ;
+ 		for(int i=0 ; i<k ; i++){
+ 			int num = i+rn.nextInt(n-i) ;
+ 			ls.add(arr[num]) ;
+ 			int temp=arr[i] ;
+ 			arr[i]=arr[num] ;
+ 			arr[num]=temp ;
+ 		}
+ 		Collections.sort(ls) ;
+ 		return ls ;
+ 	}
+ 	long profit(mylist ls){
+ 		long cost=0 ;
+ 		long benifit=0 ;
+ 		for(int elem : ls) cost+=costs[elem] ;
+ 		for(int i=0 ; i<m ; i++){
+ 			int min = Integer.MAX_VALUE ;
+ 			for(int elem : ls) min = Integer.min(min,prc[i][elem]) ;
+ 			benifit+=min ;
+ 		}
+ 		return benifit-cost ;
+ 	}
+ 	void p(Object o){
+		op.print(o) ;
+	}
+	void pln(Object o){
+		op.println(o) ;
+	}
+	void pArr(String name,long arr[]){
+		p(name+": [") ;
+		for(int i=0 ; i<arr.length ; i++) p(arr[i]+(i+1==arr.length ? "" : ",")) ;
+		pln("]") ;
+	}	
+	void Finish(){
+		op.flush();
+		op.close();
+	}	
+}
+@SuppressWarnings("serial")
+class mylist extends ArrayList<Integer>{
+}
+@SuppressWarnings("serial")
+class mySet extends TreeSet<Integer>{
+}
+class myset{
+	TreeMap<Integer,Integer> map ;
+	myset(){
+		map = new TreeMap<Integer,Integer>() ;
+ 	}
+ 	int lst,slst ;
+ 	void add(int i){
+ 		if(map.containsKey(i))
+ 			map.put(i,map.get(i)+1) ;
+ 		else
+ 			map.put(i,1) ;
+ 	}
+ 	void remove(int i){
+ 		if(!map.containsKey(i))
+ 			return ;
+ 		if(map.get(i)==1)
+ 			map.remove(i) ;
+ 		else
+ 			map.put(i,map.get(i)-1) ;
+ 	}
+ 	int least(){
+ 		return lst ;
+ 	}
+ 	void fillfields(){
+ 		lst = map.firstKey() ;
+ 		if(map.get(lst)!=1) 
+ 			slst=lst ;
+ 		else
+ 			slst = map.higherEntry(lst).getKey() ;
+ 	}
+ 	void fillfields2(){
+ 		lst = map.firstKey() ;
+ 	}
+ 	int diffofmin(int k){
+ 		if(k!=lst) return 0 ;
+ 		return (slst-lst) ; 
+ 	}
+}
+@SuppressWarnings("serial")
+class mymap extends TreeMap<Integer,Integer>{
+ 
+}
+class FasterScanner { 
+	private InputStream mIs;
+	private byte[] buf = new byte[1024];
+	private int curChar,numChars;
+	public FasterScanner() { this(System.in); } 
+	public FasterScanner(InputStream is) { mIs = is;} 
+	public int read() {
+		if (numChars == -1) throw new InputMismatchException();    
+		if (curChar >= numChars) {
+			curChar = 0;
+			try { numChars = mIs.read(buf);} catch (IOException e) { throw new InputMismatchException();}
+			if (numChars <= 0) return -1;            
+		}
+		return buf[curChar++];
+	} 
+	public String nextLine(){
+		int c = read();
+		while (isSpaceChar(c)) c = read();        
+		StringBuilder res = new StringBuilder();
+		do {
+			res.appendCodePoint(c);
+			c = read();
+		} while (!isEndOfLine(c));
+		return res.toString();
+	} 
+	public String S(){
+		int c = read();
+		while (isSpaceChar(c)) c = read();        
+		StringBuilder res = new StringBuilder();
+		do {
+			res.appendCodePoint(c);
+			c = read();
+		}while (!isSpaceChar(c));
+		return res.toString();
+	} 
+	public long l(){
+		int c = read();
+		while (isSpaceChar(c)) c = read();        
+		int sgn = 1;
+		if (c == '-') { sgn = -1 ; c = read() ; }
+		long res = 0;
+		do{
+			if (c < '0' || c > '9') throw new InputMismatchException();
+			res *= 10 ; res += c - '0' ; c = read();
+		}while(!isSpaceChar(c));
+		return res * sgn;
+	} 
+	public int i(){
+		int c = read() ;
+		while (isSpaceChar(c)) c = read();        
+		int sgn = 1;
+		if (c == '-') { sgn = -1 ; c = read() ; }
+		int res = 0;
+		do{
+			if (c < '0' || c > '9') throw new InputMismatchException();
+		res *= 10 ; res += c - '0' ; c = read() ;
+		}while(!isSpaceChar(c));
+		return res * sgn;
+	} 
+	public int[] ia(int n){
+		int a[] = new int[n] ;
+		for(int i=0 ; i<n ; i++) a[i] = i() ;
+		return a ;
+	}
+	public long[] la(int n){
+		long a[] = new long[n] ;
+		for(int i=0 ; i<n ; i++) a[i] = l() ;
+		return a ;
+	}
+	public boolean isSpaceChar(int c) { return c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == -1; } 
+	public boolean isEndOfLine(int c) { return c == '\n' || c == '\r' || c == -1; } 
+} 
